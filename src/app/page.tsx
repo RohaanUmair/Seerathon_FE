@@ -337,6 +337,10 @@ function MessageBubble({
   const isFatwa = msg.type === "fatwa_redirect";
   const isFallback = msg.type === "fallback";
 
+  if (msg.role === "bot" && !msg.text) {
+    return <LoadingBubble />;
+  }
+
   return (
     <div className="flex items-start gap-4 animate-fade-in-up px-5 md:px-8">
       <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-white dark:bg-zinc-900 border border-seerah-border dark:border-zinc-800 shadow-sm flex items-center justify-center p-1.5 mt-0.5">
@@ -435,6 +439,95 @@ export default function Home() {
     inputRef.current?.focus();
   }, []);
 
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    const text = input.trim();
+    if (!text || loading) return;
+
+    const userMsg: ChatMessage = { id: uid(), role: "user", text, citation: null, type: "answer", timestamp: getCurrentTime() };
+    const botMsgId = uid();
+    const initialBotMsg: ChatMessage = {
+      id: botMsgId,
+      role: "bot",
+      text: "",
+      citation: null,
+      type: "answer",
+      timestamp: getCurrentTime(),
+    };
+
+    setMessages((prev) => [...prev, userMsg, initialBotMsg]);
+    setInput("");
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_URL}/chat/stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text }),
+      });
+
+      if (!res.body) throw new Error("No response body");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop() || "";
+
+        for (const rawLine of lines) {
+          const trimmed = rawLine.replace(/^data:\s*/, "").trim();
+          if (!trimmed) continue;
+
+          try {
+            const data = JSON.parse(trimmed);
+            if (data.done) {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === botMsgId
+                    ? {
+                        ...m,
+                        text: data.answer,
+                        citation: data.citation,
+                        type: data.type,
+                      }
+                    : m
+                )
+              );
+            } else if (data.delta) {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === botMsgId ? { ...m, text: m.text + data.delta } : m
+                )
+              );
+            }
+          } catch {}
+        }
+      }
+    } catch {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === botMsgId
+            ? {
+                ...m,
+                text: "Sorry, I couldn't reach the server. Please check your connection and try again.",
+                citation: null,
+                type: "fallback",
+              }
+            : m
+        )
+      );
+    } finally {
+      setLoading(false);
+      inputRef.current?.focus();
+    }
+  }
+
   async function handleSourceClick(sourceType: string, sourceId: string) {
     setModalOpen(true);
     setModalLoading(true);
@@ -450,49 +543,6 @@ export default function Home() {
       // failed to load
     } finally {
       setModalLoading(false);
-    }
-  }
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    const text = input.trim();
-    if (!text || loading) return;
-
-    const userMsg: ChatMessage = { id: uid(), role: "user", text, citation: null, type: "answer", timestamp: getCurrentTime() };
-    setMessages((prev) => [...prev, userMsg]);
-    setInput("");
-    setLoading(true);
-
-    try {
-      const res = await fetch(`${API_URL}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
-      });
-      const data: ApiResponse = await res.json();
-
-      const botMsg: ChatMessage = {
-        id: uid(),
-        role: "bot",
-        text: data.answer,
-        citation: data.citation,
-        type: data.type,
-        timestamp: getCurrentTime(),
-      };
-      setMessages((prev) => [...prev, botMsg]);
-    } catch {
-      const errorMsg: ChatMessage = {
-        id: uid(),
-        role: "bot",
-        text: "Sorry, I couldn't reach the server. Please check your connection and try again.",
-        citation: null,
-        type: "fallback",
-        timestamp: getCurrentTime(),
-      };
-      setMessages((prev) => [...prev, errorMsg]);
-    } finally {
-      setLoading(false);
-      inputRef.current?.focus();
     }
   }
 
@@ -547,7 +597,6 @@ export default function Home() {
             {messages.map((msg) => (
               <MessageBubble key={msg.id} msg={msg} onSourceClick={handleSourceClick} />
             ))}
-            {loading && <LoadingBubble />}
           </div>
         </div>
       </div>
