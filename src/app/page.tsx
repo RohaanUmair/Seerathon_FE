@@ -316,7 +316,7 @@ function MessageBubble({
 
   if (msg.role === "user") {
     return (
-      <div className="flex flex-col items-end animate-fade-in-up px-5 md:px-8 space-y-1">
+      <div id={`msg-${msg.id}`} className="flex flex-col items-end animate-fade-in-up px-5 md:px-8 space-y-1">
         <div className="max-w-[80%] rounded-[24px] bg-zinc-100 dark:bg-zinc-800 px-5 py-3 text-[15px] text-zinc-900 dark:text-zinc-100 leading-relaxed shadow-sm">
           {msg.text}
         </div>
@@ -342,7 +342,7 @@ function MessageBubble({
   }
 
   return (
-    <div className="flex items-start gap-4 animate-fade-in-up px-5 md:px-8">
+    <div id={`msg-${msg.id}`} className="flex items-start gap-4 animate-fade-in-up px-5 md:px-8">
       <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-white dark:bg-zinc-900 border border-seerah-border dark:border-zinc-800 shadow-sm flex items-center justify-center p-1.5 mt-0.5">
         {isFatwa ? (
           <span className="text-seerah-orange font-bold text-sm">⚠</span>
@@ -429,11 +429,23 @@ export default function Home() {
   }, [theme]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: "smooth",
-    });
-  }, [messages, loading]);
+    const timer = setTimeout(() => {
+      const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+      if (lastUserMsg && scrollRef.current) {
+        const el = document.getElementById(`msg-${lastUserMsg.id}`);
+        if (el) {
+          const elRect = el.getBoundingClientRect();
+          const scrollRect = scrollRef.current.getBoundingClientRect();
+          const targetTop = elRect.top - scrollRect.top + scrollRef.current.scrollTop - 16;
+          scrollRef.current.scrollTo({
+            top: targetTop > 0 ? targetTop : 0,
+            behavior: "smooth",
+          });
+        }
+      }
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [messages.length]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -460,55 +472,24 @@ export default function Home() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/chat/stream`, {
+      const res = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text }),
       });
-
-      if (!res.body) throw new Error("No response body");
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder("utf-8");
-      let buffer = "";
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n\n");
-        buffer = lines.pop() || "";
-
-        for (const rawLine of lines) {
-          const trimmed = rawLine.replace(/^data:\s*/, "").trim();
-          if (!trimmed) continue;
-
-          try {
-            const data = JSON.parse(trimmed);
-            if (data.done) {
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === botMsgId
-                    ? {
-                        ...m,
-                        text: data.answer,
-                        citation: data.citation,
-                        type: data.type,
-                      }
-                    : m
-                )
-              );
-            } else if (data.delta) {
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === botMsgId ? { ...m, text: m.text + data.delta } : m
-                )
-              );
-            }
-          } catch {}
-        }
-      }
+      const data = await res.json();
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === botMsgId
+            ? {
+                ...m,
+                text: data.answer,
+                citation: data.citation,
+                type: data.type,
+              }
+            : m
+        )
+      );
     } catch {
       setMessages((prev) =>
         prev.map((m) =>
