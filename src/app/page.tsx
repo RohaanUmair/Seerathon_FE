@@ -20,6 +20,11 @@ interface ApiResponse {
   type: "answer" | "fatwa_redirect" | "fallback";
 }
 
+interface ContentSection {
+  title: string;
+  text: string;
+}
+
 interface SourceDetail {
   id: string;
   source: string;
@@ -31,6 +36,10 @@ interface SourceDetail {
   category: string;
   urdu_title: string;
   urdu_text: string;
+  sections?: ContentSection[];
+  ur_sections?: ContentSection[];
+  year?: string;
+  umar_mubarak?: string;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -139,7 +148,7 @@ function SourceModal({
         ) : detail ? (
           <div className="p-6 space-y-6">
             <div className="space-y-2 pr-10">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="inline-flex items-center rounded bg-seerah-green/10 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-seerah-green dark:text-seerah-green-light">
                   {detail.source}
                 </span>
@@ -148,19 +157,41 @@ function SourceModal({
                     {detail.category}
                   </span>
                 )}
+                {detail.year && (
+                  <span className="inline-flex items-center rounded bg-amber-100 dark:bg-amber-500/20 px-2.5 py-0.5 text-[11px] font-bold tracking-wide text-seerah-orange dark:text-amber-400">
+                    {detail.year} CE
+                  </span>
+                )}
               </div>
               <h2 className="text-xl font-bold text-seerah-green dark:text-seerah-green-light">{detail.title}</h2>
               {detail.urdu_title && <p className="text-base text-zinc-600 dark:text-zinc-400 font-medium font-urdu" dir="rtl">{detail.urdu_title}</p>}
             </div>
 
-            <div className="rounded-2xl border border-seerah-border dark:border-zinc-800 bg-seerah-card dark:bg-zinc-800 p-5 space-y-4">
-              <p className="text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">{detail.text}</p>
-              {detail.urdu_text && (
-                <p className="text-base leading-relaxed text-zinc-700 dark:text-zinc-300 border-t border-seerah-border dark:border-zinc-700 pt-4 font-urdu" dir="rtl">
-                  {detail.urdu_text}
-                </p>
-              )}
-            </div>
+            {/* Sectioned content (Timeline entries) */}
+            {detail.sections && detail.sections.length > 0 ? (
+              <div className="space-y-4">
+                {detail.sections.map((sec, i) => (
+                  <div key={i} className="rounded-2xl border border-seerah-border dark:border-zinc-800 bg-seerah-card dark:bg-zinc-800 p-5 space-y-3">
+                    {sec.title && <h3 className="text-sm font-bold text-seerah-green dark:text-seerah-green-light">{sec.title}</h3>}
+                    <p className="text-sm leading-relaxed text-zinc-800 dark:text-zinc-200 whitespace-pre-line">{sec.text}</p>
+                    {detail.ur_sections?.[i]?.text && (
+                      <p className="text-base leading-relaxed text-zinc-700 dark:text-zinc-300 border-t border-seerah-border dark:border-zinc-700 pt-3 font-urdu" dir="rtl">
+                        {detail.ur_sections[i].text}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-seerah-border dark:border-zinc-800 bg-seerah-card dark:bg-zinc-800 p-5 space-y-4">
+                <p className="text-sm leading-relaxed text-zinc-800 dark:text-zinc-200 whitespace-pre-line">{detail.text}</p>
+                {detail.urdu_text && (
+                  <p className="text-base leading-relaxed text-zinc-700 dark:text-zinc-300 border-t border-seerah-border dark:border-zinc-700 pt-4 font-urdu" dir="rtl">
+                    {detail.urdu_text}
+                  </p>
+                )}
+              </div>
+            )}
 
             {detail.hawala && (
               <div className="flex items-start gap-3 rounded-xl border border-seerah-border dark:border-zinc-800 bg-white dark:bg-zinc-900/50 p-4 shadow-sm">
