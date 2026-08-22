@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect, FormEvent } from "react";
 import Image from "next/image";
 import { Home as HomeIcon, BookOpen, RefreshCw, UserCheck, PlaySquare, User, Send, ChevronRight, CheckSquare, Copy, Check, ChevronDown } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 /* ── Types ─────────────────────────────────────────────────────────── */
 interface ChatMessage {
@@ -267,16 +269,20 @@ function CitationCard({
 /** Loading indicator while agent is working */
 function LoadingBubble() {
   return (
-    <div className="flex items-center gap-4 animate-fade-in-up px-5 md:px-8">
-      <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-white dark:bg-zinc-900 border border-seerah-border dark:border-zinc-800 shadow-sm flex items-center justify-center p-1.5">
+    <div className="flex items-start gap-4 animate-fade-in-up px-5 md:px-8">
+      <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-white dark:bg-zinc-900 border border-seerah-border dark:border-zinc-800 shadow-sm flex items-center justify-center p-1.5 mt-0.5">
          <Image src="/logo.png" alt="Seerat Ki Dunya" width={28} height={28} className="object-contain" />
       </div>
-      <div className="flex gap-1.5">
-        <span className="dot-pulse flex gap-1.5">
-          <span className="inline-block h-2 w-2 rounded-full bg-zinc-400 dark:bg-zinc-600" />
-          <span className="inline-block h-2 w-2 rounded-full bg-zinc-400 dark:bg-zinc-600" />
-          <span className="inline-block h-2 w-2 rounded-full bg-zinc-400 dark:bg-zinc-600" />
-        </span>
+      <div className="space-y-1.5 pt-1">
+        <div className="flex items-center gap-2 text-xs font-semibold text-seerah-green dark:text-seerah-green-light">
+          <span>Searching authentic corpus entries</span>
+          <span className="dot-pulse flex gap-1">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-seerah-orange" />
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-seerah-orange" />
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-seerah-orange" />
+          </span>
+        </div>
+        <p className="text-[12px] text-zinc-400 dark:text-zinc-500">Querying Shamail &amp; Seerah Timeline data...</p>
       </div>
     </div>
   );
@@ -343,7 +349,7 @@ function MessageBubble({
 
       <div className="max-w-[85%] space-y-2 pt-1">
         <div
-          className={`text-[15px] leading-relaxed ${
+          className={`text-[15px] leading-relaxed prose-chat ${
             isFatwa
               ? "text-amber-800 dark:text-amber-500 font-medium"
               : isFallback
@@ -351,12 +357,7 @@ function MessageBubble({
                 : "text-zinc-800 dark:text-zinc-200"
           }`}
         >
-          {msg.text.split("\n").map((line, i) => (
-            <span key={i}>
-              {line}
-              {i < msg.text.split("\n").length - 1 && <br />}
-            </span>
-          ))}
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
         </div>
 
         {/* Timestamp & Copy Action & Sources Flag Toggle */}
@@ -499,6 +500,14 @@ export default function Home() {
     <div className="flex h-screen flex-col bg-seerah-cream dark:bg-zinc-950 overflow-hidden transition-colors">
       <AppHeader theme={theme} setTheme={setTheme} />
 
+      {/* Persistent Notice Banner */}
+      <div className="bg-amber-500/10 dark:bg-amber-500/15 border-b border-amber-500/20 px-4 py-2 text-center text-xs font-semibold text-amber-900 dark:text-amber-300 flex items-center justify-center gap-2">
+        <span className="bg-amber-500/20 dark:bg-amber-400/20 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-md text-[10px] uppercase font-bold tracking-wider">
+          Notice
+        </span>
+        <span>Educational &amp; historical content only. Not a source of religious rulings (Fatwas). Consult a scholar.</span>
+      </div>
+
       {/* Chat scroll area with watermark */}
       <div ref={scrollRef} className="relative flex-1 overflow-y-auto pt-8 pb-[170px] space-y-8">
         {/* Watermark logo */}
@@ -564,8 +573,14 @@ export default function Home() {
               <Send className="h-5 w-5 ml-1" strokeWidth={2.5} />
             </button>
           </form>
-          <div className="mt-2 text-center text-[10px] text-zinc-400 font-medium tracking-wide">
-            Educational content only. Not a source of religious rulings. Consult a scholar.
+          <div className="mt-2.5 flex flex-col items-center gap-0.5 text-center">
+            <div className="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-400 font-semibold text-[11px]">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+              Answers sourced strictly from authentic Shamail &amp; Seerah Timeline corpus
+            </div>
+            <div className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium tracking-wide">
+              Educational content only • Not a source of religious rulings • Consult a qualified scholar
+            </div>
           </div>
         </div>
       </div>

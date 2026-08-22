@@ -69,3 +69,154 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #CFC7B4;
 }
+
+/* ── ChatGPT-style Markdown Prose ─────────────────────────────────── */
+.prose-chat {
+  line-height: 1.75;
+  word-break: break-word;
+}
+
+.prose-chat > :first-child {
+  margin-top: 0 !important;
+}
+.prose-chat > :last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Headings */
+.prose-chat h1,
+.prose-chat h2,
+.prose-chat h3,
+.prose-chat h4 {
+  font-weight: 700;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+  line-height: 1.3;
+  color: #0C3823;
+}
+:where(.dark, .dark *) .prose-chat h1,
+:where(.dark, .dark *) .prose-chat h2,
+:where(.dark, .dark *) .prose-chat h3,
+:where(.dark, .dark *) .prose-chat h4 {
+  color: #6ee7b7;
+}
+.prose-chat h1 {
+  font-size: 1.55em;
+  font-weight: 800;
+  margin-top: 0.25em;
+  margin-bottom: 0.6em;
+  letter-spacing: -0.01em;
+  border-bottom: 1.5px solid #E8E2D5;
+  padding-bottom: 0.35em;
+}
+:where(.dark, .dark *) .prose-chat h1 {
+  border-bottom-color: #3f3f46;
+}
+.prose-chat h2 { font-size: 1.3em; font-weight: 700; }
+.prose-chat h3 { font-size: 1.12em; font-weight: 700; }
+.prose-chat h4 { font-size: 1em; font-weight: 600; }
+
+/* Paragraphs */
+.prose-chat p {
+  margin-top: 0.75em;
+  margin-bottom: 0.75em;
+}
+
+/* Bold & Strong */
+.prose-chat strong {
+  font-weight: 700;
+  color: #1a1a1a;
+}
+:where(.dark, .dark *) .prose-chat strong {
+  color: #f4f4f5;
+}
+
+/* Lists */
+.prose-chat ul {
+  list-style-type: disc;
+  padding-left: 1.5em;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+.prose-chat ol {
+  list-style-type: decimal;
+  padding-left: 1.5em;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+.prose-chat li {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+  padding-left: 0.25em;
+}
+.prose-chat li::marker {
+  color: #F28227;
+}
+
+/* Nested lists */
+.prose-chat ul ul,
+.prose-chat ol ol,
+.prose-chat ul ol,
+.prose-chat ol ul {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+/* Blockquotes */
+.prose-chat blockquote {
+  border-left: 3px solid #F28227;
+  padding-left: 1em;
+  margin: 0.75em 0;
+  color: #525252;
+  font-style: italic;
+}
+:where(.dark, .dark *) .prose-chat blockquote {
+  color: #a1a1aa;
+  border-left-color: #F28227;
+}
+
+/* Horizontal Rule */
+.prose-chat hr {
+  border: none;
+  border-top: 1px solid #E8E2D5;
+  margin: 1em 0;
+}
+:where(.dark, .dark *) .prose-chat hr {
+  border-top-color: #3f3f46;
+}
+
+/* Tables */
+.prose-chat table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75em 0;
+  font-size: 0.9em;
+}
+.prose-chat th {
+  background: #f4f1eb;
+  font-weight: 700;
+  text-align: left;
+  padding: 0.5em 0.75em;
+  border-bottom: 2px solid #E8E2D5;
+}
+:where(.dark, .dark *) .prose-chat th {
+  background: #27272a;
+  border-bottom-color: #3f3f46;
+}
+.prose-chat td {
+  padding: 0.5em 0.75em;
+  border-bottom: 1px solid #E8E2D5;
+}
+:where(.dark, .dark *) .prose-chat td {
+  border-bottom-color: #3f3f46;
+}
+
+/* Links */
+.prose-chat a {
+  color: #0C3823;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+:where(.dark, .dark *) .prose-chat a {
+  color: #6ee7b7;
+}
