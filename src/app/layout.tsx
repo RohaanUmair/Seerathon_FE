@@ -13,9 +13,37 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Seerah Q&A — Learn About the Prophet ﷺ",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://seeratkidunya.com"),
+  title: "Seerat Ki Dunya — Learn About the Prophet ﷺ",
   description:
     "An AI-powered assistant that answers questions about the Prophet Muhammad ﷺ using authenticated Seerah and Shamail sources.",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
+  openGraph: {
+    title: "Seerat Ki Dunya — AI Seerah & Shamail Assistant",
+    description:
+      "Explore the life, appearance, and historical milestones of the Prophet Muhammad ﷺ using authenticated Seerah and Shamail sources.",
+    siteName: "Seerat Ki Dunya",
+    images: [
+      {
+        url: "/logo.png",
+        width: 800,
+        height: 800,
+        alt: "Seerat Ki Dunya Logo",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Seerat Ki Dunya — AI Seerah & Shamail Assistant",
+    description:
+      "Explore the life, appearance, and historical milestones of the Prophet Muhammad ﷺ using authenticated Seerah and Shamail sources.",
+    images: ["/logo.png"],
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
