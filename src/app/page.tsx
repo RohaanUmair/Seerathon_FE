@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, FormEvent } from "react";
 import Image from "next/image";
-import { BookOpen, Send, ChevronRight, Copy, Check, ChevronDown, Plus, Trash2, MessageSquare, Menu, X, RotateCcw } from "lucide-react";
+import { BookOpen, Send, ChevronRight, Copy, Check, ChevronDown, Plus, Trash2, MessageSquare, Menu, X, RotateCcw, FileDown } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -337,11 +337,13 @@ function MessageBubble({
   onSourceClick,
   onRetry,
   userPromptForRetry,
+  onDownloadPdf,
 }: {
   msg: ChatMessage;
   onSourceClick: (sourceType: string, sourceId: string) => void;
   onRetry?: (promptText: string) => void;
   userPromptForRetry?: string;
+  onDownloadPdf?: (userPrompt: string, msg: ChatMessage) => void;
 }) {
   const [copied, setCopied] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
@@ -422,7 +424,7 @@ function MessageBubble({
           </button>
         )}
 
-        {/* Timestamp & Copy Action & Sources Flag Toggle */}
+        {/* Timestamp & Copy Action & Download PDF & Sources Flag Toggle */}
         <div className="flex items-center gap-3 pt-1 text-[11px] text-zinc-400 dark:text-zinc-500">
           <span>{msg.timestamp}</span>
           <button
@@ -442,6 +444,18 @@ function MessageBubble({
               </>
             )}
           </button>
+
+          {/* Download Answer as PDF */}
+          {!isFatwa && !isFallback && msg.text && onDownloadPdf && (
+            <button
+              onClick={() => onDownloadPdf(userPromptForRetry || "", msg)}
+              title="Download Answer as PDF"
+              className="flex items-center gap-1 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors p-0.5 cursor-pointer"
+            >
+              <FileDown className="w-3.5 h-3.5" />
+              <span>PDF</span>
+            </button>
+          )}
 
           {/* Expand / Close Sources Flag Button */}
           {citationLines.length > 0 && (
@@ -495,6 +509,28 @@ export default function Home() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
   const [sourceDetail, setSourceDetail] = useState<SourceDetail | null>(null);
+  const [printTarget, setPrintTarget] = useState<{ userPrompt: string; msg: ChatMessage } | null>(null);
+
+  // Trigger window.print when a single answer is targeted for PDF download
+  useEffect(() => {
+    if (printTarget) {
+      const timer = setTimeout(() => {
+        window.print();
+      }, 80);
+      const handleAfterPrint = () => {
+        setPrintTarget(null);
+      };
+      window.addEventListener("afterprint", handleAfterPrint);
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener("afterprint", handleAfterPrint);
+      };
+    }
+  }, [printTarget]);
+
+  const handleDownloadPdf = (userPrompt: string, msg: ChatMessage) => {
+    setPrintTarget({ userPrompt, msg });
+  };
 
   // Auto-open sidebar on desktop screens
   useEffect(() => {
@@ -803,197 +839,263 @@ export default function Home() {
   );
 
   return (
-    <div className="flex h-screen bg-seerah-cream dark:bg-zinc-950 overflow-hidden transition-colors">
-      
-      {/* ── Claude-style Sidebar ────────────────────────────────────────── */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-40 w-72 bg-white dark:bg-zinc-900 border-r border-seerah-border dark:border-zinc-800 flex flex-col transition-transform duration-300 ease-in-out ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        {/* Sidebar Header with New Chat */}
-        <div className="p-4 border-b border-seerah-border dark:border-zinc-800 flex items-center justify-between gap-2">
-          <button
-            onClick={handleNewChat}
-            className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-seerah-green dark:bg-teal-700 hover:bg-seerah-green/90 dark:hover:bg-teal-600 text-white px-4 py-2.5 text-sm font-semibold shadow-xs transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span>New Chat</span>
-          </button>
-          <button
-            onClick={() => setIsSidebarOpen(false)}
-            className="p-2 rounded-lg text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-            title="Close Sidebar"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Chat List */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-1">
-          <div className="px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-            Recent Conversations
+    <>
+      <div className="flex h-screen bg-seerah-cream dark:bg-zinc-950 overflow-hidden transition-colors print:hidden">
+        
+        {/* ── Claude-style Sidebar ────────────────────────────────────────── */}
+        <aside
+          className={`fixed inset-y-0 left-0 z-40 w-72 bg-white dark:bg-zinc-900 border-r border-seerah-border dark:border-zinc-800 flex flex-col transition-transform duration-300 ease-in-out ${
+            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          {/* Sidebar Header with New Chat */}
+          <div className="p-4 border-b border-seerah-border dark:border-zinc-800 flex items-center justify-between gap-2">
+            <button
+              onClick={handleNewChat}
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-seerah-green dark:bg-teal-700 hover:bg-seerah-green/90 dark:hover:bg-teal-600 text-white px-4 py-2.5 text-sm font-semibold shadow-xs transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Chat</span>
+            </button>
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="p-2 rounded-lg text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              title="Close Sidebar"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          {sortedChatList.length === 0 ? (
-            <div className="p-4 text-xs text-zinc-400 dark:text-zinc-500 text-center italic">
-              No conversations yet. Send a message to start!
+
+          {/* Chat List */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-1">
+            <div className="px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+              Recent Conversations
             </div>
-          ) : (
-            sortedChatList.map((chat) => {
-              const isActive = chat.id === activeChatId;
-              return (
-                <div
-                  key={chat.id}
-                  onClick={() => handleSelectChat(chat.id)}
-                  className={`group relative flex items-center justify-between rounded-xl px-3 py-2.5 text-sm cursor-pointer transition-all ${
-                    isActive
-                      ? "bg-seerah-green/10 dark:bg-zinc-800 text-seerah-green dark:text-seerah-green-light font-semibold"
-                      : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0 pr-6">
-                    <MessageSquare className={`w-4 h-4 shrink-0 ${isActive ? "text-seerah-green dark:text-seerah-green-light" : "text-zinc-400 dark:text-zinc-500"}`} />
-                    <span className="truncate text-[13px]">{chat.title}</span>
-                  </div>
-                  <button
-                    onClick={(e) => handleDeleteChat(chat.id, e)}
-                    className="absolute right-2 opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-red-500 dark:hover:text-red-400 transition-opacity"
-                    title="Delete Chat"
+            {sortedChatList.length === 0 ? (
+              <div className="p-4 text-xs text-zinc-400 dark:text-zinc-500 text-center italic">
+                No conversations yet. Send a message to start!
+              </div>
+            ) : (
+              sortedChatList.map((chat) => {
+                const isActive = chat.id === activeChatId;
+                return (
+                  <div
+                    key={chat.id}
+                    onClick={() => handleSelectChat(chat.id)}
+                    className={`group relative flex items-center justify-between rounded-xl px-3 py-2.5 text-sm cursor-pointer transition-all ${
+                      isActive
+                        ? "bg-seerah-green/10 dark:bg-zinc-800 text-seerah-green dark:text-seerah-green-light font-semibold"
+                        : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
+                    }`}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Sidebar Footer */}
-        <div className="p-4 border-t border-seerah-border dark:border-zinc-800 flex items-center gap-3">
-          <div className="h-8 w-8 rounded-full bg-seerah-orange flex items-center justify-center text-white text-xs font-bold">
-            S
-          </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">Seerat Ki Dunya</h4>
-            <p className="text-[10px] text-zinc-400 dark:text-zinc-500">AI Seerah Assistant</p>
-          </div>
-        </div>
-      </aside>
-
-      {/* Backdrop for mobile sidebar */}
-      {isSidebarOpen && (
-        <div
-          onClick={() => setIsSidebarOpen(false)}
-          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-xs md:hidden"
-        />
-      )}
-
-      {/* ── Main Chat Area ──────────────────────────────────────────────── */}
-      <div className={`flex-1 flex flex-col h-full overflow-hidden relative transition-all duration-300 ${isSidebarOpen ? "md:ml-72" : "ml-0"}`}>
-        <AppHeader
-          theme={theme}
-          setTheme={setTheme}
-          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-        />
-
-        {/* Persistent Notice Banner */}
-        <div className="bg-amber-500/10 dark:bg-amber-500/15 border-b border-amber-500/20 px-4 py-2 text-center text-xs font-semibold text-amber-900 dark:text-amber-300 flex items-center justify-center gap-2 shrink-0">
-          <span className="bg-amber-500/20 dark:bg-amber-400/20 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-md text-[10px] uppercase font-bold tracking-wider">
-            Notice
-          </span>
-          <span>Educational &amp; historical content only. Not a source of religious rulings (Fatwas). Consult a scholar.</span>
-        </div>
-
-        {/* Chat scroll area with watermark */}
-        <div ref={scrollRef} className="relative flex-1 overflow-y-auto pt-8 pb-[170px] space-y-8 px-4 sm:px-6">
-          {/* Watermark logo */}
-          {messages.length > 0 && (
-            <div className={`pointer-events-none fixed inset-0 flex items-center justify-center z-0 transition-all duration-300 ${isSidebarOpen ? "md:ml-72" : "ml-0"}`}>
-              <Image src="/logo.png" alt="" width={450} height={450} className="object-contain opacity-[0.05] dark:opacity-[0.02]" priority />
-            </div>
-          )}
-
-          <div className="relative z-[1]">
-            {messages.length === 0 && !loading && (
-              <div className="flex flex-col items-center justify-center pt-10 px-8 text-center animate-fade-in-up w-full max-w-3xl mx-auto">
-                <div className="h-20 w-20 mb-4 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-seerah-border dark:border-zinc-800 flex items-center justify-center p-3">
-                  <Image src="/logo.png" alt="Seerat Ki Dunya" width={60} height={60} className="object-contain" priority />
-                </div>
-                <h2 className="text-xl font-bold text-seerah-green dark:text-seerah-green-light">AI Seerathon</h2>
-                <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400 max-w-sm">
-                  Discover the life of Khatam al-Anbiya ﷺ. Ask questions about the Prophet&apos;s appearance, character, or key events.
-                </p>
-
-                <div className="mt-8 grid grid-cols-1 gap-3 w-full max-w-sm">
-                  {["What did the Prophet ﷺ look like?", "Tell me about the Treaty of Hudaybiyyah"].map((q) => (
+                    <div className="flex items-center gap-2.5 min-w-0 pr-6">
+                      <MessageSquare className={`w-4 h-4 shrink-0 ${isActive ? "text-seerah-green dark:text-seerah-green-light" : "text-zinc-400 dark:text-zinc-500"}`} />
+                      <span className="truncate text-[13px]">{chat.title}</span>
+                    </div>
                     <button
-                      key={q}
-                      onClick={() => { setInput(q); inputRef.current?.focus(); }}
-                      className="rounded-xl border border-seerah-border dark:border-zinc-800 bg-white dark:bg-zinc-900 px-5 py-4 text-sm font-medium text-zinc-700 dark:text-zinc-300 shadow-sm transition-all hover:border-seerah-green/30 dark:hover:border-zinc-600 hover:text-seerah-green dark:hover:text-zinc-100 text-left flex justify-between items-center cursor-pointer"
+                      onClick={(e) => handleDeleteChat(chat.id, e)}
+                      className="absolute right-2 opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-red-500 dark:hover:text-red-400 transition-opacity cursor-pointer"
+                      title="Delete Chat"
                     >
-                      <span>{q}</span>
-                      <ChevronRight className="w-4 h-4 text-zinc-300 dark:text-zinc-600" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Sidebar Footer */}
+          <div className="p-4 border-t border-seerah-border dark:border-zinc-800 flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-seerah-orange flex items-center justify-center text-white text-xs font-bold">
+              S
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">Seerat Ki Dunya</h4>
+              <p className="text-[10px] text-zinc-400 dark:text-zinc-500">AI Seerah Assistant</p>
+            </div>
+          </div>
+        </aside>
+
+        {/* Backdrop for mobile sidebar */}
+        {isSidebarOpen && (
+          <div
+            onClick={() => setIsSidebarOpen(false)}
+            className="fixed inset-0 z-30 bg-black/40 backdrop-blur-xs md:hidden cursor-pointer"
+          />
+        )}
+
+        {/* ── Main Chat Area ──────────────────────────────────────────────── */}
+        <div className={`flex-1 flex flex-col h-full overflow-hidden relative transition-all duration-300 ${isSidebarOpen ? "md:ml-72" : "ml-0"}`}>
+          <AppHeader
+            theme={theme}
+            setTheme={setTheme}
+            onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          />
+
+          {/* Persistent Notice Banner */}
+          <div className="bg-amber-500/10 dark:bg-amber-500/15 border-b border-amber-500/20 px-4 py-2 text-center text-xs font-semibold text-amber-900 dark:text-amber-300 flex items-center justify-center gap-2 shrink-0">
+            <span className="bg-amber-500/20 dark:bg-amber-400/20 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-md text-[10px] uppercase font-bold tracking-wider">
+              Notice
+            </span>
+            <span>Educational &amp; historical content only. Not a source of religious rulings (Fatwas). Consult a scholar.</span>
+          </div>
+
+          {/* Chat scroll area with watermark */}
+          <div ref={scrollRef} className="relative flex-1 overflow-y-auto pt-8 pb-[170px] space-y-8 px-4 sm:px-6">
+            {/* Watermark logo */}
+            {messages.length > 0 && (
+              <div className={`pointer-events-none fixed inset-0 flex items-center justify-center z-0 transition-all duration-300 ${isSidebarOpen ? "md:ml-72" : "ml-0"}`}>
+                <Image src="/logo.png" alt="" width={450} height={450} className="object-contain opacity-[0.05] dark:opacity-[0.02]" priority />
+              </div>
+            )}
+
+            <div className="relative z-[1]">
+              {messages.length === 0 && !loading && (
+                <div className="flex flex-col items-center justify-center pt-10 px-8 text-center animate-fade-in-up w-full max-w-3xl mx-auto">
+                  <div className="h-20 w-20 mb-4 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-seerah-border dark:border-zinc-800 flex items-center justify-center p-3">
+                    <Image src="/logo.png" alt="Seerat Ki Dunya" width={60} height={60} className="object-contain" priority />
+                  </div>
+                  <h2 className="text-xl font-bold text-seerah-green dark:text-seerah-green-light">AI Seerathon</h2>
+                  <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400 max-w-sm">
+                    Discover the life of Khatam al-Anbiya ﷺ. Ask questions about the Prophet&apos;s appearance, character, or key events.
+                  </p>
+
+                  <div className="mt-8 grid grid-cols-1 gap-3 w-full max-w-sm">
+                    {["What did the Prophet ﷺ look like?", "Tell me about the Treaty of Hudaybiyyah"].map((q) => (
+                      <button
+                        key={q}
+                        onClick={() => { setInput(q); inputRef.current?.focus(); }}
+                        className="rounded-xl border border-seerah-border dark:border-zinc-800 bg-white dark:bg-zinc-900 px-5 py-4 text-sm font-medium text-zinc-700 dark:text-zinc-300 shadow-sm transition-all hover:border-seerah-green/30 dark:hover:border-zinc-600 hover:text-seerah-green dark:hover:text-zinc-100 text-left flex justify-between items-center cursor-pointer"
+                      >
+                        <span>{q}</span>
+                        <ChevronRight className="w-4 h-4 text-zinc-300 dark:text-zinc-600" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-8 w-full max-w-3xl mx-auto">
+                {messages.map((msg, index) => {
+                  const prevMsg = index > 0 ? messages[index - 1] : null;
+                  const userPrompt = prevMsg && prevMsg.role === "user" ? prevMsg.text : "";
+                  return (
+                    <MessageBubble
+                      key={msg.id}
+                      msg={msg}
+                      onSourceClick={handleSourceClick}
+                      onRetry={handleRetry}
+                      userPromptForRetry={userPrompt}
+                      onDownloadPdf={handleDownloadPdf}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Fixed Input Area above Bottom Nav */}
+          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-seerah-cream dark:from-zinc-950 via-seerah-cream dark:via-zinc-950 to-transparent pt-6 pb-6 px-6 z-20">
+            <div className="mx-auto max-w-3xl">
+              <form onSubmit={handleSubmit} className="flex items-center gap-3">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Ask AI Seerathon..."
+                  disabled={loading}
+                  className="flex-1 rounded-full border border-seerah-border dark:border-zinc-700 bg-white dark:bg-zinc-900 px-6 py-4 text-[15px] text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 outline-none shadow-sm transition-all focus:border-seerah-green/50 dark:focus:border-zinc-500 focus:ring-2 focus:ring-seerah-green/20 dark:focus:ring-zinc-700 disabled:opacity-60"
+                />
+                <button
+                  type="submit"
+                  disabled={loading || !input.trim()}
+                  className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-full bg-seerah-orange text-white shadow-md transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  <Send className="h-5 w-5 ml-1" strokeWidth={2.5} />
+                </button>
+              </form>
+              <div className="mt-2.5 flex flex-col items-center gap-0.5 text-center">
+                <div className="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-400 font-semibold text-[11px]">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                  Answers sourced strictly from authentic Shamail &amp; Seerah Timeline corpus
+                </div>
+                <div className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium tracking-wide">
+                  Educational content only • Not a source of religious rulings • Consult a qualified scholar
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {modalOpen && (
+          <SourceModal detail={sourceDetail} loading={modalLoading} onClose={() => { setModalOpen(false); setSourceDetail(null); }} />
+        )}
+      </div>
+
+      {/* ── Printable Single-Answer Report (Visible only during window.print) ── */}
+      {printTarget && (
+        <div id="printable-single-answer" className="hidden print:block font-sans text-black bg-white p-8 max-w-2xl mx-auto relative">
+          {/* Centered Watermark on Print */}
+          <div className="print-watermark-overlay">
+            <Image src="/logo.png" alt="" width={380} height={380} className="object-contain opacity-[0.05]" priority />
+          </div>
+
+          <div className="relative z-10 space-y-6">
+            {/* Document Header */}
+            <div className="flex items-center justify-between border-b-2 border-emerald-900/20 pb-4">
+              <div className="flex items-center gap-3">
+                <Image src="/logo.png" alt="Seerat Ki Dunya" width={44} height={44} className="object-contain" priority />
+                <div>
+                  <h1 className="text-xl font-bold text-emerald-950 tracking-tight">Seerat Ki Dunya</h1>
+                  <p className="text-xs text-zinc-500 font-medium">AI Seerah &amp; Shamail Research Report</p>
+                </div>
+              </div>
+              <div className="text-right text-xs text-zinc-500">
+                <p className="font-semibold text-zinc-700">{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <p>{printTarget.msg.timestamp || getCurrentTime()}</p>
+              </div>
+            </div>
+
+            {/* Question Box */}
+            {printTarget.userPrompt && (
+              <div className="rounded-xl bg-amber-50/70 border border-amber-200/80 p-4 space-y-1">
+                <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Question:</span>
+                <p className="text-sm font-semibold text-zinc-900">{printTarget.userPrompt}</p>
+              </div>
+            )}
+
+            {/* Answer Content */}
+            <div className="space-y-3">
+              <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider">Authenticated Response:</span>
+              <div className="prose-chat text-sm leading-relaxed text-zinc-900">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{printTarget.msg.text}</ReactMarkdown>
+              </div>
+            </div>
+
+            {/* Source Citation Box */}
+            {printTarget.msg.citation && (
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 space-y-2 mt-4">
+                <span className="text-[11px] font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>📜</span> Authentic Primary Source Reference(s):
+                </span>
+                <div className="space-y-1 text-xs text-zinc-800 font-mono">
+                  {printTarget.msg.citation.split('\n').filter(Boolean).map((line, idx) => (
+                    <p key={idx} className="bg-white p-2 rounded border border-zinc-200/80">{line}</p>
                   ))}
                 </div>
               </div>
             )}
 
-            <div className="space-y-8 w-full max-w-3xl mx-auto">
-              {messages.map((msg, index) => {
-                const prevMsg = index > 0 ? messages[index - 1] : null;
-                const userPrompt = prevMsg && prevMsg.role === "user" ? prevMsg.text : "";
-                return (
-                  <MessageBubble
-                    key={msg.id}
-                    msg={msg}
-                    onSourceClick={handleSourceClick}
-                    onRetry={handleRetry}
-                    userPromptForRetry={userPrompt}
-                  />
-                );
-              })}
+            {/* Verified Footer Disclaimer */}
+            <div className="border-t border-zinc-200 pt-4 text-center text-[10px] text-zinc-500 space-y-1">
+              <p className="font-semibold text-emerald-900">Verified Seerah &amp; Shamail Historical Corpus</p>
+              <p>Educational &amp; historical content only • Not a source of religious rulings (Fatwas) • Consult a qualified Islamic scholar</p>
             </div>
           </div>
         </div>
-
-        {/* Fixed Input Area above Bottom Nav */}
-        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-seerah-cream dark:from-zinc-950 via-seerah-cream dark:via-zinc-950 to-transparent pt-6 pb-6 px-6 z-20">
-          <div className="mx-auto max-w-3xl">
-            <form onSubmit={handleSubmit} className="flex items-center gap-3">
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask AI Seerathon..."
-                disabled={loading}
-                className="flex-1 rounded-full border border-seerah-border dark:border-zinc-700 bg-white dark:bg-zinc-900 px-6 py-4 text-[15px] text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 outline-none shadow-sm transition-all focus:border-seerah-green/50 dark:focus:border-zinc-500 focus:ring-2 focus:ring-seerah-green/20 dark:focus:ring-zinc-700 disabled:opacity-60"
-              />
-              <button
-                type="submit"
-                disabled={loading || !input.trim()}
-                className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-full bg-seerah-orange text-white shadow-md transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 cursor-pointer disabled:cursor-not-allowed"
-              >
-                <Send className="h-5 w-5 ml-1" strokeWidth={2.5} />
-              </button>
-            </form>
-            <div className="mt-2.5 flex flex-col items-center gap-0.5 text-center">
-              <div className="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-400 font-semibold text-[11px]">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                Answers sourced strictly from authentic Shamail &amp; Seerah Timeline corpus
-              </div>
-              <div className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium tracking-wide">
-                Educational content only • Not a source of religious rulings • Consult a qualified scholar
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {modalOpen && (
-        <SourceModal detail={sourceDetail} loading={modalLoading} onClose={() => { setModalOpen(false); setSourceDetail(null); }} />
       )}
-    </div>
+    </>
   );
 }
