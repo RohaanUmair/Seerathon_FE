@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect, FormEvent } from "react";
 import Image from "next/image";
-import { BookOpen, Send, ChevronRight, Copy, Check, ChevronDown, Plus, Trash2, MessageSquare, Menu, X, RotateCcw, FileDown } from "lucide-react";
+import Link from "next/link";
+import { BookOpen, Send, ChevronRight, Copy, Check, ChevronDown, Plus, Trash2, MessageSquare, Menu, X, RotateCcw, FileDown, Info } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -141,7 +142,7 @@ function AppHeader({
           <span className="font-semibold text-zinc-800 dark:text-zinc-200 text-sm hidden sm:inline">Rohaan Umair</span>
         </div>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         {/* Theme Toggle */}
         <div 
           className="flex items-center gap-2 text-xs font-semibold cursor-pointer"
@@ -153,6 +154,16 @@ function AppHeader({
           </div>
           <span className={theme === "dark" ? "text-blue-400" : "text-zinc-400 transition-colors text-[14px]"}>🌙</span>
         </div>
+
+        {/* About Link (Soft Pill Button on Rightmost) */}
+        <Link
+          href="/about"
+          className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-seerah-green border border-emerald-200 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800/60 transition-all shadow-xs cursor-pointer"
+          title="Architecture & Safety"
+        >
+          <Info className="w-3.5 h-3.5" />
+          <span>About</span>
+        </Link>
       </div>
     </header>
   );
@@ -906,13 +917,22 @@ export default function Home() {
           </div>
 
           {/* Sidebar Footer */}
-          <div className="p-4 border-t border-seerah-border dark:border-zinc-800 flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-seerah-orange flex items-center justify-center text-white text-xs font-bold">
-              S
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">Seerat Ki Dunya</h4>
-              <p className="text-[10px] text-zinc-400 dark:text-zinc-500">AI Seerah Assistant</p>
+          <div className="p-4 border-t border-seerah-border dark:border-zinc-800 space-y-3">
+            <Link
+              href="/about"
+              className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs font-semibold text-seerah-green dark:text-emerald-400 hover:bg-seerah-green/10 dark:hover:bg-emerald-500/10 transition-colors cursor-pointer"
+            >
+              <Info className="w-3.5 h-3.5" />
+              Architecture & Safety
+            </Link>
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-seerah-orange flex items-center justify-center text-white text-xs font-bold">
+                S
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">Seerat Ki Dunya</h4>
+                <p className="text-[10px] text-zinc-400 dark:text-zinc-500">AI Seerah Assistant</p>
+              </div>
             </div>
           </div>
         </aside>
