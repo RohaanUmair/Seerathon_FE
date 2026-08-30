@@ -20,7 +20,7 @@ export default function AboutPage() {
     <div className="min-h-screen bg-seerah-cream dark:bg-zinc-950 transition-colors">
       {/* ── Header ───────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-20 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border-b border-seerah-border dark:border-zinc-800">
-        <div className="max-w-3xl mx-auto flex items-center justify-between px-6 py-3">
+        <div className="mx-auto flex items-center justify-between px-6 py-3">
           <Link href="/" className="flex items-center gap-2 text-sm font-semibold text-seerah-green dark:text-seerah-green-light hover:opacity-80 transition-opacity cursor-pointer">
             <ArrowLeft className="w-4 h-4" />
             Back to Chat
